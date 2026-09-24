@@ -53,7 +53,7 @@ export const InfoModal: React.FC<InfoModalProps> = ({
               <div className="bg-zinc-900/80 p-2.5 rounded-lg border border-zinc-800">
                 <span className="text-zinc-500 block">Selected Model</span>
                 <span className="font-mono font-medium text-indigo-300">
-                  {providerStatus?.modelName || 'gemini-3.1-flash-lite-image'}
+                  {providerStatus?.modelName || 'gemini-3.1-flash-image'}
                 </span>
               </div>
             </div>
