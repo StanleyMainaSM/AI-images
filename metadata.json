@@ -1,0 +1,6 @@
+{
+  "name": "AI Image Studio",
+  "description": "Generate high-quality AI images from text descriptions and reference photos with smart visual prompt expansion.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
