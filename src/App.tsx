@@ -222,6 +222,10 @@ export default function App() {
 
   // Main Generate Action
   const handleGenerate = async (customPrompt?: string) => {
+    if (!isConfigured) {
+      setError(providerLoading ? 'The image service is still loading. Please wait a moment.' : 'Image generation is not configured yet. Open Setup Guide for help.');
+      return;
+    }
     const finalPrompt = (customPrompt ?? prompt).trim();
     if (!finalPrompt) {
       setError('Please enter a description for the image.');
@@ -331,7 +335,8 @@ export default function App() {
     'Finalizing visual clarity and color grading...',
   ];
 
-  const isConfigured = providerStatus?.isConfigured ?? true;
+  const providerLoading = providerStatus === null;
+  const isConfigured = providerStatus?.isConfigured === true;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-indigo-500/30 selection:text-indigo-200">
@@ -343,18 +348,39 @@ export default function App() {
       />
 
       {/* Main Studio Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Unconfigured Alert Banner */}
-        {!isConfigured && (
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* Beginner-friendly welcome */}
+        <section className="mb-6 sm:mb-8 overflow-hidden rounded-3xl border border-indigo-500/15 bg-gradient-to-br from-indigo-950/45 via-zinc-900/80 to-amber-950/20 p-5 sm:p-7 shadow-2xl shadow-indigo-950/20">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-indigo-400/20 bg-indigo-400/10 px-3 py-1 text-[11px] font-semibold text-indigo-200">
+                <Sparkles className="w-3.5 h-3.5" />
+                Create an image in 3 simple steps
+              </div>
+              <h2 className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-white">Describe it. Style it. Create it.</h2>
+              <p className="mt-2 text-sm leading-6 text-zinc-300">You don't need to know prompt engineering. Tell the studio what you want to see, choose a look, and press Generate.</p>
+            </div>
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:min-w-[420px]">
+              {[['1','Describe','Tell us what to create'],['2','Customize','Pick a style & shape'],['3','Generate','Get your image']].map(([n,t,d]) => (
+                <div key={n} className="rounded-2xl border border-white/5 bg-black/20 p-3">
+                  <div className="flex items-center gap-2"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500/20 text-[10px] font-bold text-indigo-300">{n}</span><span className="text-xs font-semibold text-white">{t}</span></div>
+                  <p className="mt-2 text-[10px] leading-4 text-zinc-500">{d}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+        {/* Provider state */}
+        {!providerLoading && !isConfigured && (
           <div className="mb-6 p-4 rounded-2xl bg-amber-950/40 border border-amber-500/40 text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-amber-950/20">
             <div className="flex items-center gap-3">
               <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-white">
-                  Image generation provider is not configured.
+                  Image generation is not ready yet.
                 </p>
                 <p className="text-xs text-amber-300/80">
-                  Please configure your <code className="bg-amber-950/80 px-1 py-0.5 rounded text-amber-200 font-mono">GEMINI_API_KEY</code> in the environment secrets panel to start generating images.
+                  The studio needs its image-generation service configured. If you own this app, open the setup guide for the exact next step.
                 </p>
               </div>
             </div>
@@ -864,13 +890,8 @@ export default function App() {
                     <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-3 text-zinc-500">
                       <ImageIcon className="w-6 h-6" />
                     </div>
-                    <p className="text-xs font-semibold text-zinc-300">
-                      Studio Canvas Empty
-                    </p>
-                    <p className="text-[11px] text-zinc-500 max-w-xs mt-1">
-                      Enter a prompt or select a sample idea on the left, then click{' '}
-                      <strong className="text-zinc-400">Generate High-Quality Image</strong>.
-                    </p>
+                    <p className="text-sm font-semibold text-zinc-200">Your canvas is ready</p>
+                    <p className="text-xs text-zinc-500 max-w-sm mt-1 leading-5">Describe anything you can imagine, or start with one of the examples above. Your finished image will appear here.</p>
                   </div>
                 )}
               </div>
