@@ -22,7 +22,7 @@ const SUPPORTED_STYLES: Record<string, string> = {
 export class GeminiProvider implements ImageGenerationProvider {
   id = 'gemini';
   name = 'Google Gemini AI';
-  description = 'Official Google AI multimodal image generation powered by Gemini & Imagen models';
+  description = 'Official Google Gemini multimodal image generation';
 
   private getApiKey(): string | undefined {
     return process.env.GEMINI_API_KEY;
@@ -37,7 +37,7 @@ export class GeminiProvider implements ImageGenerationProvider {
     const custom = process.env.GEMINI_IMAGE_MODEL?.trim();
     if (custom) return custom;
     // Default to the recommended Gemini image generation model from @google/genai SDK guidelines
-    return 'gemini-3.1-flash-lite-image';
+    return 'gemini-3.1-flash-image';
   }
 
   getCapabilities(): ProviderCapabilities {
@@ -115,7 +115,7 @@ export class GeminiProvider implements ImageGenerationProvider {
       return this.generateWithReferenceImage(options);
     }
 
-    // If using Imagen dedicated image model
+    /* Legacy Imagen support removed: Google has shut down Imagen in the Gemini API. */
     if (modelName.startsWith('imagen-')) {
       try {
         const response = await ai.models.generateImages({
@@ -305,7 +305,7 @@ Return clean JSON with two keys:
 
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: 'gemini-3.6-flash',
         contents: `Transform this simple description into a detailed image generation prompt: "${simplePrompt}". ${styleNote}`,
         config: {
           systemInstruction,
@@ -399,7 +399,7 @@ Each object must have:
       return 'The configured GEMINI_API_KEY is invalid. Please verify your API key in the environment secrets.';
     }
     if (message.includes('RESOURCE_EXHAUSTED') || message.includes('quota') || message.includes('429')) {
-      return 'API rate limit or quota exceeded. Please wait a few moments before trying another image generation.';
+      return `Google rejected the image request because the project has reached its current API quota/rate limit for ${model}. Image-generation models currently require an eligible paid tier; check Google AI Studio usage/billing for this project. Original error: ${message}`;
     }
     if (message.includes('SAFETY') || message.includes('blocked') || message.includes('Safety')) {
       return 'The prompt or input image was flagged by Google safety filters. Please adjust the prompt to comply with safety policies.';
