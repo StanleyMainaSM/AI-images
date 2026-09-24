@@ -58,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center gap-1.5">
               <span className="hidden md:inline text-zinc-400">Model:</span>
               <span className="font-mono font-medium truncate max-w-[130px] sm:max-w-[200px]">
-                {providerStatus?.modelName || 'gemini-3.1-flash-lite-image'}
+                {providerStatus?.modelName || 'gemini-3.1-flash-image'}
               </span>
             </div>
           </div>
