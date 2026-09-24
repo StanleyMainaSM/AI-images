@@ -1,229 +1,71 @@
 # AI Image Studio
 
-A full-stack, production-grade web application for generating high-quality AI images from descriptive text prompts and personalized reference photos with likeness preservation.
+A simple, polished AI image-generation studio for beginners. Describe an image in normal language, choose a style and size, and generate it. It also supports creating a new scene from a user's own reference photo.
 
-Developed with the official Google `@google/genai` SDK and an extensible provider architecture.
+## What it does
 
----
+- Text to image
+- Create with my photo (reference-image mode with an ownership/consent check)
+- Prompt improvement
+- Visual ideas from a topic
+- Photorealistic, cinematic, advertising, editorial, illustration, 3D, anime and digital-art styles
+- 1:1, 16:9, 9:16 and 4:3 formats
+- Download and regenerate images
+- Session-only gallery; no login or database required by the app
 
-## Table of Contents
-1. [Core Features](#core-features)
-2. [Architecture Overview](#architecture-overview)
-3. [Installation & Setup](#installation--setup)
-4. [Configuring Environment Variables](#configuring-environment-variables)
-5. [How Text-to-Image Generation Works](#how-text-to-image-generation-works)
-6. [How "Create With My Photo" Likeness Works](#how-create-with-my-photo-likeness-works)
-7. [Smart Visual Prompt Assistant](#smart-visual-prompt-assistant)
-8. [Provider & Model Capabilities Matrix](#provider--model-capabilities-matrix)
-9. [How to Switch Image Providers and Models](#how-to-switch-image-providers-and-models)
-10. [Privacy, Security & Likeness Consent](#privacy-security--likeness-consent)
-11. [Cost & Transparency Policy](#cost--transparency-policy)
+## Important: image API availability and cost
 
----
+The app uses Google's current Gemini image-generation API. Google currently lists Gemini 3.1 Flash Image as a current image model, while Imagen has been shut down for the Gemini API. Google's pricing page currently lists the Gemini image-generation models without a Free Tier, so an API project intended to generate images needs the appropriate paid/billing access. Do not describe this application as unlimited-free image generation. citeturn0search0turn0search2
 
-## Core Features
+The text-only prompt assistant can use a Gemini Flash text model with a free tier where available, but that does not make image generation free. Rate limits are applied at the project level. citeturn0search1turn0search2
 
-- **Text-to-Image Generation**: Turn detailed natural language scene descriptions into high-resolution, photorealistic, or artistic images.
-- **"Create With My Photo" Mode**: Upload your own portrait photo with consent verification; the system places your likeness into the scene you describe.
-- **Smart Visual Prompt Assistant**:
-  - **✨ Improve Prompt**: Enhances simple descriptions into cinematographic prompts detailing subject, environment, lighting, lens/camera, textures, and atmosphere.
-  - **💡 Visual From Topic / Script**: Brainstorms 3 distinct, creative visual concepts from any topic, quote, or video script (e.g., *"Work hard and build your future"*).
-- **Style Presets**: Photorealistic, Cinematic, Professional Photography, Advertising, Editorial, Illustration, 3D, Anime, Digital Art, or Raw.
-- **Standard Aspect Ratios**: 1:1 (Square), 16:9 (Landscape), 9:16 (Story / Reel), and 4:3 (Standard).
-- **Session-Only Image Gallery**: Preview, inspect full-resolution, download local PNGs, and reuse prompt settings during your browser session without a database.
-- **Real Backend Security**: All Google GenAI SDK calls and API keys remain strictly on the server-side (`server.ts`).
+## Setup
 
----
+1. Create or open a Google AI Studio / Gemini API project.
+2. Put the API key in the server environment as `GEMINI_API_KEY`. Never expose it in browser code.
+3. Use `gemini-3.1-flash-image` as the default image model, or explicitly set another currently supported Google image model in `GEMINI_IMAGE_MODEL`.
+4. Install dependencies with `npm install`.
+5. Run with `npm run dev`.
+6. Build with `npm run build` and start with `npm start`.
 
-## Architecture Overview
+## Environment variables
 
-```
-                      ┌────────────────────────────────────────┐
-                      │          React Frontend (Vite)         │
-                      │  - Prompt Editor & Style Controls      │
-                      │  - "Create With My Photo" Uploader     │
-                      │  - Session Gallery & Lightbox Viewer   │
-                      └──────────────────┬─────────────────────┘
-                                         │ HTTP JSON API (/api/*)
-                                         ▼
-                      ┌────────────────────────────────────────┐
-                      │          Express Server Backend        │
-                      │  - server.ts                           │
-                      │  - File validation & Payload checks    │
-                      │  - Strict in-memory photo processing   │
-                      └──────────────────┬─────────────────────┘
-                                         │
-                                         ▼
-                      ┌────────────────────────────────────────┐
-                      │        Provider Manager Layer          │
-                      │  (ImageGenerationProvider Interface)   │
-                      │  - ProviderManager: getActiveProvider()│
-                      └──────────────────┬─────────────────────┘
-                                         │
-                                         ▼
-                      ┌────────────────────────────────────────┐
-                      │         Google Gemini Provider         │
-                      │  - @google/genai SDK (v2.4+)           │
-                      │  - GEMINI_IMAGE_MODEL configurable    │
-                      │  - Text assistance via gemini-3.8-flash│
-                      └──────────────────┬─────────────────────┘
-                                         │
-                                         ▼
-                      ┌────────────────────────────────────────┐
-                      │         Google AI Studio API           │
-                      │  - gemini-3.1-flash-lite-image         │
-                      │  - gemini-3.1-flash-image              │
-                      │  - imagen-3.0-generate-002             │
-                      └────────────────────────────────────────┘
-```
+| Variable | Purpose | Default |
+|---|---|---|
+| `GEMINI_API_KEY` | Server-side Gemini API key | none |
+| `GEMINI_IMAGE_MODEL` | Google image-generation model | `gemini-3.1-flash-image` |
+| `AI_IMAGE_PROVIDER` | Active provider | `gemini` |
+| `PORT` | Express port | `3000` |
 
-The server abstracts image generation through the `ImageGenerationProvider` interface:
-```typescript
-export interface ImageGenerationProvider {
-  id: string;
-  name: string;
-  description: string;
-  isConfigured(): boolean;
-  getModelName(): string;
-  getCapabilities(): ProviderCapabilities;
-  generateImage(options: ImageGenerationOptions): Promise<GeneratedImageResult>;
-  generateWithReferenceImage?(options: ImageGenerationOptions): Promise<GeneratedImageResult>;
-}
-```
+## User experience
 
----
+The intended flow is deliberately simple:
 
-## Installation & Setup
+1. **Describe** — type what you want.
+2. **Choose** — pick a style and aspect ratio.
+3. **Generate** — click the main Generate button.
+4. **Download** — save the result or regenerate it.
 
-### Prerequisites
-- Node.js 20+ or 22+
-- npm
+For a personal image, switch to **Create With My Photo**, upload a portrait, confirm you have permission to use the likeness, describe the new scene, and generate.
 
-### 1. Install Dependencies
-```bash
-npm install
-```
+The application never invents a fake image URL when generation fails. Errors from the provider are surfaced as actionable messages instead.
 
-### 2. Configure Environment
-Copy the `.env.example` file to `.env`:
-```bash
-cp .env.example .env
-```
-Populate `GEMINI_API_KEY` with your key from Google AI Studio.
+## Architecture
 
-### 3. Run Development Server
-```bash
-npm run dev
-```
-The server will start on `http://localhost:3000` with full-stack API proxy and Vite middleware.
+React + Vite frontend → Express API → provider manager → Gemini provider.
 
-### 4. Build for Production
-```bash
-npm run build
-npm start
-```
+The provider interface is intentionally kept separate so another image provider can be added later without rewriting the UI.
 
----
+## Security and privacy
 
-## Configuring Environment Variables
+- API keys remain server-side.
+- Reference images are accepted in memory for the generation request; the app does not require a database.
+- Uploads are limited to JPEG, PNG and WEBP and 10 MB.
+- The reference-photo flow requires an explicit ownership/permission confirmation.
+- The app does not fabricate successful generation results.
 
-| Variable | Description | Default |
-| :--- | :--- | :--- |
-| `GEMINI_API_KEY` | Required for Gemini image and prompt reasoning calls. Keep secure on server. | *None* |
-| `GEMINI_IMAGE_MODEL` | Configurable Google image generation model. | `gemini-3.1-flash-lite-image` |
-| `AI_IMAGE_PROVIDER` | Active provider implementation in the ProviderManager. | `gemini` |
-| `PORT` | HTTP port for Express server. | `3000` |
+## Current model notes
 
----
+Google's current documentation says Nano Banana image models are the current path for image generation and that Imagen is shut down for the Gemini API. This repository therefore does not rely on Imagen for its normal generation flow. citeturn0search0
 
-## How Text-to-Image Generation Works
-
-1. The user enters a descriptive prompt in the studio workspace.
-2. The user optionally selects an artistic style (e.g. *Photorealistic*, *Cinematic*, *Advertising*) and aspect ratio.
-3. The server enriches the prompt directives with style tokens and negative exclusion criteria.
-4. If configured with a Gemini image model (e.g. `gemini-3.1-flash-lite-image`), `ai.models.generateContent` is invoked with `imageConfig: { aspectRatio }`.
-5. If configured with an Imagen model (e.g. `imagen-3.0-generate-002`), `ai.models.generateImages` is invoked.
-6. The resulting image bytes are returned to the client as base64 data, rendered instantly in the canvas, and added to the current session gallery.
-
----
-
-## How "Create With My Photo" Likeness Works
-
-1. **User Uploads Portrait**: The user selects a high-quality portrait photo (JPEG, PNG, or WEBP up to 10MB).
-2. **Mandatory Ownership Confirmation**: The user checks the consent checkbox confirming they own the photo or have explicit permission to use the person's likeness.
-3. **In-Memory Streaming**: The photo is encoded in base64 and streamed in-memory to the server. The image is never written to disk or saved to a database.
-4. **Multimodal Reference Conditioning**: The server attaches the image as an `inlineData` part alongside the prompt directive using Gemini's multimodal image model (`gemini-3.1-flash-lite-image` or `gemini-3.1-flash-image`).
-5. **Likeness Preservation**: The model references facial characteristics and geometry to place the person in the newly described setting (e.g. a Nairobi financial office, an artisan workshop, or a modern architectural studio).
-
-*Note: AI identity synthesis renders a new artistic image inspired by the reference likeness; slight variations in rendering style and facial nuance may occur depending on model capabilities.*
-
----
-
-## Smart Visual Prompt Assistant
-
-The application provides two intelligent prompt-engineering tools powered by `gemini-3.8-flash`:
-
-### 1. "Improve Prompt"
-Transforms simple phrases (such as *"person explaining hard work"*) into photographic directives:
-- **Subject**: Demographic nuances, expression, gesture, and clothing.
-- **Environment**: Concrete location, background depth, and architectural elements.
-- **Lighting**: Quality, angle, ambient bounce, and color temperature.
-- **Camera**: Focal length (e.g., 85mm f/1.4), depth of field, and angle.
-- **Atmosphere**: Natural textures, dust motes, and human realism.
-
-### 2. "Create Visual From Topic"
-Allows creators to input a narrative theme or script line (e.g., *"Work hard and build your future"*). The system generates 3 complete concepts with titles, artistic rationales, full visual prompts, suggested styles, and aspect ratios.
-
----
-
-## Provider & Model Capabilities Matrix
-
-| Feature | `gemini-3.1-flash-lite-image` | `gemini-3.1-flash-image` | `imagen-3.0-generate-002` |
-| :--- | :--- | :--- | :--- |
-| **Provider** | Google Gemini | Google Gemini | Google Imagen |
-| **Aspect Ratios** | 1:1, 16:9, 9:16, 4:3, 3:4 | 1:1, 16:9, 9:16, 4:3, 3:4 | 1:1, 16:9, 9:16, 4:3, 3:4 |
-| **Reference Image Likeness** | Supported (`inlineData`) | Supported (`inlineData`) | Text-to-image primary |
-| **Resolution Selection** | Standard 1K | Configurable (512px, 1K, 2K) | Standard 1K |
-| **Negative Prompts** | Supported | Supported | Supported |
-
----
-
-## How to Switch Image Providers and Models
-
-### Changing the Gemini Model
-Set the `GEMINI_IMAGE_MODEL` environment variable in your `.env` file:
-```env
-# Fast, lightweight generation with reference photo support (Default)
-GEMINI_IMAGE_MODEL="gemini-3.1-flash-lite-image"
-
-# High-resolution generation
-GEMINI_IMAGE_MODEL="gemini-3.1-flash-image"
-
-# Dedicated Imagen 3 generation
-GEMINI_IMAGE_MODEL="imagen-3.0-generate-002"
-```
-
-### Adding a New Image Provider
-To add a 3rd-party or custom image provider:
-1. Implement the `ImageGenerationProvider` interface in `server/providers/`.
-2. Register the provider in `server/providers/manager.ts`:
-   ```typescript
-   providerManager.registerProvider(new CustomProvider());
-   ```
-3. Set `AI_IMAGE_PROVIDER="custom"` in `.env`.
-
----
-
-## Privacy, Security & Likeness Consent
-
-- **No Permanent Storage**: Uploaded user photos and generated images are strictly ephemeral. The backend never writes uploads to disk, and there is no user database or tracking in v1.
-- **No Model Training**: Uploaded reference photos are processed solely for the immediate generation request and are never used to train or fine-tune public models.
-- **Server-Side API Key Protection**: The Google GenAI API key is accessed strictly through `process.env.GEMINI_API_KEY` on the Express server. The key is never exposed to the client or browser network logs.
-- **Input Validation**: Strict file type validation (JPEG, PNG, WEBP), file size checks (10MB max), and input sanitization are enforced before processing.
-
----
-
-## Cost & Transparency Policy
-
-- **No Misleading Free Promises**: AI image generation is not "unlimited free". All API calls consume tokens or quota in your Google AI Studio or Google Cloud project.
-- **No Artificial Paywalls**: The app does not simulate fake tokens, credits, or subscriptions.
+If Google changes model names or availability, update the environment model value rather than hard-coding an obsolete model into the frontend.
